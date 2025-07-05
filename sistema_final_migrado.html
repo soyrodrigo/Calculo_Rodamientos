@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Análisis de Componentes Mecánicos - PLAMPH° Tupiza</title>
+    
+    <!-- CDNs ACTUALIZADOS Y ESTABLES -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.10/index.global.min.js"></script>
+    
+    <!-- NUEVOS CDNs PARA PDF - VERSIONES ESTABLES Y CORREGIDAS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- NUESTROS MÓDULOS EXTERNOS -->
+    <script src="pdf-generator.js"></script>
+    <script src="testing_suite.js"></script>
+    <script src="script_migracion.js"></script>
+    <script src="configuracion_avanzada.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header-oficial {
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 70%, #d32f2f 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 0;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-tupiza {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1e3c72;
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.1;
+        }
+        
+        .plamph-logo {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .header-text {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .header-text h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header-text .subtitle {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+        
+        .responsable-info {
+            text-align: right;
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        .system-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1e3c72;
+        }
+        
+        .system-title h2 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #1e3c72, #d32f2f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* NUEVO: Panel de estado del sistema */
+        .sistema-estado {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #4caf50;
+            display: none;
+        }
+        
+        .sistema-estado.warning {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 20%);
+            border-left-color: #ff9800;
+        }
+        
+        .sistema-estado.error {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border-left-color: #f44336;
+        }
+        
+        .estado-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .estado-item {
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .estado-item .status {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        
+        .estado-item .label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        /* Panel de herramientas de diagnóstico */
+        .herramientas-diagnostico {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #2196f3;
+        }
+        
+        .config-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #1e3c72;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e3c72;
+        }
+        
+        .input-group input, .input-group select {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+        
+        .fecha-inicio-highlight {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #1e3c72 !important;
+            font-weight: bold;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #d32f2f, #b71c1c);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #4caf50, #388e3c);
+        }
+        
+        .btn-pdf {
+            background: linear-gradient(45deg, #673ab7, #512da8);
+            position: relative;
+        }
+        
+        .btn-pdf.generating::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: generating 1.5s infinite;
+        }
+        
+        @keyframes generating {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .btn-diagnostico {
+            background: linear-gradient(45deg, #00bcd4, #0097a7);
+        }
+        
+        .results-section {
+            margin-top: 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #1e3c72;
+            border-bottom-color: #1e3c72;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #1e3c72;
+        }
+        
+        .card h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 14px;
+        }
+        
+        th {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-critico {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .status-alto {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        
+        .status-medio {
+            background: #e8f5e8;
+            color: #4caf50;
+        }
+        
+        .status-bajo {
+            background: #e3f2fd;
+            color: #2196f3;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .summary-card h4 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .summary-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .summary-card .unit {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #155724;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .editable-input {
+            width: 70px;
+            padding: 6px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .editable-input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 5px rgba(30, 60, 114, 0.3);
+        }
+        
+        .editable-select {
+            width: 90px;
+            padding: 4px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .editable-select:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+        
+        .criticidad-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .criticidad-btn {
+            padding: 2px 6px;
+            font-size: 10px;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+            color: white;
+        }
+        
+        .precio-editable {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            padding: 6px;
+            border-radius: 6px;
+            width: 85px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .precio-editable:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 5px rgba(30, 60, 114, 0.3);
+        }
+        
+        .tiempo-recambio {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .grupo-header {
+            background: linear-gradient(90deg, #e3f2fd, #bbdefb);
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px !important;
+            width: 100% !important;
+            margin: 20px 0;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #2a5298;
+            height: 420px !important;
+        }
+        
+        .chart-card canvas {
+            height: 320px !important;
+            width: 100% !important;
+            max-height: 320px !important;
+        }
+        
+        .chart-card h4 {
+            margin-bottom: 15px;
+            height: 25px;
+            color: #1e3c72;
+            font-size: 1.1em;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #1e3c72;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 11px;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .carga-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .carga-estimada {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .marca-individual {
+            width: 80px;
+            font-size: 10px;
+            padding: 3px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .capacidad-marca {
+            background: #1e3c72;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 2px;
+            display: block;
+        }
+        
+        .capacidad-correa {
+            background: #ff9800;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 2px;
+            display: block;
+        }
+        
+        .marca-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 90px;
+        }
+
+        .calendario-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .fc-event {
+            border-radius: 6px !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            border: none !important;
+        }
+
+        .fc-event-tiempo {
+            font-size: 10px !important;
+            opacity: 0.9;
+        }
+        
+        /* NUEVO: Indicadores de progreso y estado */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4caf50, #66bb6a);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            max-width: 400px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: linear-gradient(45deg, #4caf50, #66bb6a);
+            color: white;
+        }
+        
+        .notification.warning {
+            background: linear-gradient(45deg, #ff9800, #ffb74d);
+            color: white;
+        }
+        
+        .notification.error {
+            background: linear-gradient(45deg, #f44336, #e57373);
+            color: white;
+        }
+        
+        .notification.info {
+            background: linear-gradient(45deg, #2196f3, #64b5f6);
+            color: white;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #1e3c72;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive design mejorado */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>Procesando...</h3>
+            <p id="loadingText">Inicializando sistema...</p>
+        </div>
+    </div>
+
+    <div class="header-oficial">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-tupiza">
+                    🏛️<br>TUPIZA
+                </div>
+                <div class="plamph-logo">
+                    PLAMPH°<br>TUPIZA
+                </div>
+            </div>
+            <div class="header-text">
+                <h1>GOBIERNO AUTÓNOMO MUNICIPAL DE TUPIZA</h1>
+                <div class="subtitle">
+                    Secretaría Municipal Técnica - Planta Municipal de Premoldeados - Hormigones
+                </div>
+            </div>
+            <div class="responsable-info">
+                <strong>Responsable:</strong><br>
+                Ing. Rodrigo Barrios Andrade<br>
+                <small>Técnico de Operación y Mantenimiento PLAMPH°</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="system-title">
+            <h2>🔧 Sistema de Análisis de Componentes Mecánicos</h2>
+            <p>Cálculo de tiempo de recambio para Rodamientos, Chumaceras y Correas - Versión 2.0</p>
+        </div>
+        
+        <!-- NUEVO: Panel de estado del sistema -->
+        <div class="sistema-estado" id="sistemaEstado">
+            <h3>📊 Estado del Sistema</h3>
+            <div class="estado-grid">
+                <div class="estado-item">
+                    <div class="status" id="estadoPDF">🔄</div>
+                    <div class="label">PDF Generator</div>
+                </div>
+                <div class="estado-item">
+                    <div class="status" id="estadoDependencias">🔄</div>
+                    <div class="label">Dependencias</div>
+                </div>
+                <div class="estado-item">
+                    <div class="status" id="estadoDatos">🔄</div>
+                    <div class="label">Datos</div>
+                </div>
+                <div class="estado-item">
+                    <div class="status" id="estadoCompatibilidad">🔄</div>
+                    <div class="label">Navegador</div>
+                </div>
+            </div>
+            <p id="estadoMensaje">Verificando sistema...</p>
+        </div>
+        
+        <!-- NUEVO: Panel de herramientas de diagnóstico -->
+        <div class="herramientas-diagnostico">
+            <h3>🔧 Herramientas de Diagnóstico y Reparación</h3>
+            <p>Utiliza estas herramientas para verificar y solucionar problemas automáticamente:</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-diagnostico" onclick="ejecutarDiagnosticoCompleto()">🔍 Diagnóstico Completo</button>
+                <button class="btn btn-warning" onclick="repararAutomaticamente()">🔧 Reparación Automática</button>
+                <button class="btn btn-success" onclick="testPDFRapido()">⚡ Test PDF Rápido</button>
+                <button class="btn" onclick="mostrarAyuda()">❓ Ayuda</button>
+            </div>
+        </div>
+        
+        <div class="config-panel">
+            <h3>⚙️ Configuración Global</h3>
+            <div class="config-grid">
+                <div class="input-group">
+                    <label for="fechaInicio">📅 Fecha de inicio de funcionamiento:</label>
+                    <input type="date" id="fechaInicio" class="fecha-inicio-highlight" value="2025-01-01" onchange="calcularEventosCalendario()">
+                </div>
+                <div class="input-group">
+                    <label for="fabricanteGlobal">Fabricante por defecto:</label>
+                    <select id="fabricanteGlobal" onchange="cambiarFabricanteGlobal()">
+                        <option value="GENERICO">Genérico (Económico)</option>
+                        <option value="KOYO">KOYO</option>
+                        <option value="NTN">NTN</option>
+                        <option value="NSK" selected>NSK</option>
+                        <option value="FAG">FAG</option>
+                        <option value="SKF">SKF (Premium)</option>
+                        <option value="TIMKEN">TIMKEN (Premium)</option>
+                        <option value="GATES">GATES (Correas)</option>
+                        <option value="OPTIBELT">OPTIBELT (Correas)</option>
+                        <option value="CONTINENTAL">CONTINENTAL (Correas)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="diasSemana">Días de trabajo por semana:</label>
+                    <input type="number" id="diasSemana" value="5" min="1" max="7">
+                </div>
+                <div class="input-group">
+                    <label for="semanasAno">Semanas de trabajo por año:</label>
+                    <input type="number" id="semanasAno" value="50" min="1" max="52">
+                </div>
+                <div class="input-group">
+                    <label for="factorAmbiente">Condiciones ambientales:</label>
+                    <select id="factorAmbiente">
+                        <option value="1.0">Limpias (factor 1.0)</option>
+                        <option value="0.8" selected>Normales (factor 0.8)</option>
+                        <option value="0.6">Polvorientas (factor 0.6)</option>
+                        <option value="0.4">Severas (factor 0.4)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="margenSeguridad">Margen de seguridad:</label>
+                    <select id="margenSeguridad">
+                        <option value="1.2">Conservador (20%)</option>
+                        <option value="1.5" selected>Estándar (50%)</option>
+                        <option value="2.0">Alto (100%)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="calcularTodo()">🔄 Calcular Tiempos de Recambio</button>
+                <button class="btn btn-success" onclick="aplicarCargasEstimadas()">⚡ Aplicar Cargas Estimadas</button>
+                <button class="btn btn-warning" onclick="exportarDatos()">📊 Exportar a CSV</button>
+                <!-- BOTÓN PDF MEJORADO CON NUEVO SISTEMA -->
+                <button class="btn btn-pdf" id="btnGenerarPDF" onclick="generarReportePDFMejorado()">📄 Generar Reporte PDF</button>
+                <button class="btn" onclick="guardarConfiguracion()">💾 Guardar Configuración</button>
+                <button class="btn" onclick="cargarConfiguracion()">📂 Cargar Configuración</button>
+            </div>
+        </div>
+        
+        <div class="results-section" id="resultados" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" onclick="mostrarTab('resumen')">📊 Resumen</button>
+                <button class="tab" onclick="mostrarTab('configuracion')">⚙️ Configuración</button>
+                <button class="tab" onclick="mostrarTab('graficas')">📈 Gráficas</button>
+                <button class="tab" onclick="mostrarTab('calendario')">📅 Calendario</button>
+                <button class="tab" onclick="mostrarTab('analisis')">🔍 Análisis</button>
+                <button class="tab" onclick="mostrarTab('presupuesto')">💰 Presupuesto</button>
+                <button class="tab" onclick="mostrarTab('diagnosticos')">🔧 Diagnósticos</button>
+            </div>
+            
+            <div id="tab-resumen" class="tab-content active">
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4>COMPONENTES CRÍTICOS</h4>
+                        <div class="value" id="componentesCriticos">-</div>
+                        <div class="unit">requieren atención</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>PRESUPUESTO TOTAL</h4>
+                        <div class="value" id="presupuestoTotal">-</div>
+                        <div class="unit">BOB</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>TIEMPO PROMEDIO RECAMBIO</h4>
+                        <div class="value" id="tiempoPromedio">-</div>
+                        <div class="unit">meses</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>COMPONENTES TOTALES</h4>
+                        <div class="value" id="totalComponentes">-</div>
+                        <div class="unit">unidades</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🚨 Componentes que Requieren Atención Inmediata</h3>
+                    <div id="alertasCriticas"></div>
+                </div>
+            </div>
+            
+            <!-- Pestaña de Configuración -->
+            <div id="tab-configuracion" class="tab-content">
+                <div class="card">
+                    <h3>⚙️ Configuración Detallada por Componente</h3>
+                    <p><strong>Instrucciones:</strong> Ajusta RPM, factor de carga, horas diarias, criticidad, marca y precios según las condiciones reales.</p>
+                    
+                    <div class="warning">
+                        <h4>💡 Guía de Factores:</h4>
+                        <ul>
+                            <li><strong>Carga:</strong> 0.2-0.4 (Ligera), 0.5-0.7 (Media), 0.8-1.0 (Alta)</li>
+                            <li><strong>Criticidad:</strong> 🟢 Bajo, 🟡 Medio, 🟠 Alto, 🔴 Crítico</li>
+                            <li><strong>RPM:</strong> Velocidad real de operación</li>
+                            <li><strong>Marca:</strong> Cada componente puede tener diferente marca según disponibilidad</li>
+                            <li><strong>Capacidad kN:</strong> Valor de carga dinámica para comparar entre marcas similares</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="tablaConfiguracion">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Cant.</th>
+                                    <th>Aplicación</th>
+                                    <th>RPM</th>
+                                    <th>Carga <span class="tooltip">ℹ️<span class="tooltiptext">Factor de carga: 0.1=Muy ligera, 0.5=Media, 1.0=Máxima</span></span></th>
+                                    <th>Hrs/Día</th>
+                                    <th>Criticidad</th>
+                                    <th>Marca y Capacidad</th>
+                                    <th>Precio (BOB)</th>
+                                    <th>Tiempo Recambio</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn" onclick="aplicarConfiguracion()">✅ Aplicar Configuración</button>
+                        <button class="btn btn-danger" onclick="aumentarCriticidadTodos()">⬆️ Aumentar Criticidad Global</button>
+                        <button class="btn btn-success" onclick="aplicarCargasEstimadas()">⚡ Aplicar Cargas Estimadas</button>
+                        <button class="btn" onclick="restaurarDefaults()">🔄 Restaurar Valores por Defecto</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pestaña de Gráficas -->
+            <div id="tab-graficas" class="tab-content">
+                <div class="card">
+                    <h3>📈 Análisis Gráfico de Componentes</h3>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h4>Criticidad por Sistema</h4>
+                            <canvas id="criticidadChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Distribución de Costos</h4>
+                            <canvas id="costosChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Tiempo de Recambio por Grupo</h4>
+                            <canvas id="tiempoChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Componentes por Categoría</h4>
+                            <canvas id="categoriaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pestaña del Calendario -->
+            <div id="tab-calendario" class="tab-content">
+                <div class="card">
+                    <h3>📅 Calendario de Mantenimiento 2025</h3>
+                    <p><strong>Colores de referencia:</strong></p>
+                    <div style="display: flex; gap: 20px; margin: 15px 0; flex-wrap: wrap;">
+                        <span style="background: #dc3545; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px;">🔴 Mensual (crítico)</span>
+                        <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px;">🟢 Trimestral (cada 3 meses)</span>
+                        <span style="background: #fd7e14; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px;">🟠 Semestral (cada 6 meses)</span>
+                        <span style="background: #007bff; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px;">🔵 Anual (cada año)</span>
+                    </div>
+                    <div class="calendario-container">
+                        <div id="calendario"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pestaña de Análisis -->
+            <div id="tab-analisis" class="tab-content">
+                <div class="card">
+                    <h3>🔍 Análisis Detallado por Grupo</h3>
+                    <div id="analisisDetallado"></div>
+                </div>
+            </div>
+            
+            <!-- Pestaña de Presupuesto -->
+            <div id="tab-presupuesto" class="tab-content">
+                <div class="card">
+                    <h3>💰 Presupuesto y Cronograma de Recambios</h3>
+                    <div id="presupuestoDetallado"></div>
+                </div>
+            </div>
+            
+            <!-- NUEVA: Pestaña de Diagnósticos -->
+            <div id="tab-diagnosticos" class="tab-content">
+                <div class="card">
+                    <h3>🔧 Panel de Diagnósticos y Testing</h3>
+                    <div id="resultadosDiagnostico">
+                        <div class="info">
+                            <h4>🔍 Herramientas Disponibles</h4>
+                            <p>Utiliza estas herramientas para verificar el estado del sistema y resolver problemas:</p>
+                            <div style="margin-top: 15px;">
+                                <button class="btn btn-diagnostico" onclick="ejecutarTestCompleto()">🧪 Test Completo</button>
+                                <button class="btn btn-success" onclick="ejecutarTestRapido()">⚡ Test Rápido</button>
+                                <button class="btn btn-warning" onclick="ejecutarBenchmark()">📊 Benchmark</button>
+                                <button class="btn" onclick="limpiarCache()">🧹 Limpiar Cache</button>
+                            </div>
+                        </div>
+                        <div id="resultadosTesteo"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====================================================================
+        // DATOS Y CONFIGURACIÓN (MANTENIDOS DEL CÓDIGO ORIGINAL)
+        // ====================================================================
+        
+        // Vida base de correas por fabricante (en meses)
+        const vidaBaseCorreasFabricante = {
+            "GENERICO": 18,
+            "GATES": 24,
+            "OPTIBELT": 20, 
+            "CONTINENTAL": 22,
+            "NSK": 18,
+            "KOYO": 18,
+            "NTN": 18,
+            "FAG": 18,
+            "SKF": 18,
+            "TIMKEN": 18
+        };
+
+        // Datos de componentes (mantenidos del código original)
+        const componentesData = [
+            // RUEDAS
+            {id: 1, tipo: "6206 2RS", categoria: "Ruedas", cantidad: 4, aplicacion: "Ruedas Sistema Apilado", 
+             rpm: 300, carga: 0.9, horas_diarias: 8, criticidad: 3, grupo: "RUEDAS", marca: "NSK"},
+            {id: 2, tipo: "6206 RS", categoria: "Ruedas", cantidad: 4, aplicacion: "Ruedas Carro Material", 
+             rpm: 250, carga: 0.9, horas_diarias: 6, criticidad: 3, grupo: "RUEDAS", marca: "NSK"},
+             
+            // SISTEMA DE EXTRACCIÓN
+            {id: 3, tipo: "6203 42RS", categoria: "Rodamiento", cantidad: 20, aplicacion: "Sistema Extracción Pallets", 
+             rpm: 1200, carga: 0.6, horas_diarias: 8, criticidad: 2, grupo: "EXTRACCIÓN", marca: "NSK"},
+            {id: 4, tipo: "6205 RS", categoria: "Rodamiento", cantidad: 2, aplicacion: "Sistema Extracción Pallets", 
+             rpm: 800, carga: 0.6, horas_diarias: 8, criticidad: 2, grupo: "EXTRACCIÓN", marca: "NSK"},
+             
+            // SISTEMA DE APILADO
+            {id: 5, tipo: "6205 RS", categoria: "Rodamiento", cantidad: 4, aplicacion: "Sistema Apilado Pallets", 
+             rpm: 600, carga: 0.5, horas_diarias: 8, criticidad: 2, grupo: "APILADO", marca: "NSK"},
+            {id: 6, tipo: "6204 RS", categoria: "Rodamiento", cantidad: 8, aplicacion: "Sistema Apilado Pallets", 
+             rpm: 500, carga: 0.5, horas_diarias: 8, criticidad: 2, grupo: "APILADO", marca: "NSK"},
+             
+            // CARROS Y MANIVELAS
+            {id: 7, tipo: "6205 2RS", categoria: "Rodamiento", cantidad: 6, aplicacion: "Carro Material", 
+             rpm: 200, carga: 0.4, horas_diarias: 4, criticidad: 1, grupo: "CARROS", marca: "NSK"},
+            {id: 8, tipo: "6205 2RS", categoria: "Rodamiento", cantidad: 4, aplicacion: "Manivelas Carro", 
+             rpm: 150, carga: 0.3, horas_diarias: 2, criticidad: 1, grupo: "CARROS", marca: "NSK"},
+            {id: 9, tipo: "6304 2RS", categoria: "Rodamiento", cantidad: 2, aplicacion: "Laterales Carro", 
+             rpm: 100, carga: 0.3, horas_diarias: 4, criticidad: 1, grupo: "CARROS", marca: "NSK"},
+            {id: 10, tipo: "6207 RZ", categoria: "Rodamiento", cantidad: 2, aplicacion: "Disco Agitado Carro", 
+             rpm: 1500, carga: 0.8, horas_diarias: 6, criticidad: 3, grupo: "CARROS", marca: "NSK"},
+            {id: 11, tipo: "6204 RS", categoria: "Rodamiento", cantidad: 48, aplicacion: "Carros Transporte TRUPER", 
+             rpm: 180, carga: 0.5, horas_diarias: 6, criticidad: 2, grupo: "CARROS", marca: "NSK"},
+             
+            // CINTA TRANSPORTADORA
+            {id: 12, tipo: "6304 RS", categoria: "Rodamiento", cantidad: 6, aplicacion: "Cinta Pequeña Alimentación", 
+             rpm: 800, carga: 0.3, horas_diarias: 8, criticidad: 1, grupo: "CINTA", marca: "NSK"},
+            {id: 13, tipo: "6304 RS", categoria: "Rodamiento", cantidad: 36, aplicacion: "Cinta Transportadora Material", 
+             rpm: 1000, carga: 0.4, horas_diarias: 8, criticidad: 2, grupo: "CINTA", marca: "NSK"},
+             
+            // OTROS
+            {id: 14, tipo: "6204", categoria: "Rodamiento", cantidad: 4, aplicacion: "Caja Pallets", 
+             rpm: 100, carga: 0.5, horas_diarias: 2, criticidad: 1, grupo: "OTROS", marca: "NSK"},
+             
+            // CHUMACERAS
+            {id: 15, tipo: "P205", categoria: "Chumacera", cantidad: 2, aplicacion: "Sistema Extracción", 
+             rpm: 800, carga: 0.6, horas_diarias: 8, criticidad: 2, grupo: "CHUMACERAS", marca: "NSK"},
+            {id: 16, tipo: "UCFL 206", categoria: "Chumacera", cantidad: 2, aplicacion: "Sistema Extracción", 
+             rpm: 1000, carga: 0.6, horas_diarias: 8, criticidad: 2, grupo: "CHUMACERAS", marca: "NSK"},
+            {id: 17, tipo: "UCFL 205", categoria: "Chumacera", cantidad: 2, aplicacion: "Cepillo Redondo", 
+             rpm: 1200, carga: 0.5, horas_diarias: 6, criticidad: 2, grupo: "CHUMACERAS", marca: "NSK"},
+            {id: 18, tipo: "207 306", categoria: "Chumacera", cantidad: 4, aplicacion: "Sistema Apilado", 
+             rpm: 600, carga: 0.6, horas_diarias: 8, criticidad: 2, grupo: "CHUMACERAS", marca: "NSK"},
+            {id: 19, tipo: "F206", categoria: "Chumacera", cantidad: 6, aplicacion: "Carro Material", 
+             rpm: 300, carga: 0.5, horas_diarias: 4, criticidad: 1, grupo: "CHUMACERAS", marca: "NSK"},
+            {id: 20, tipo: "P207", categoria: "Chumacera", cantidad: 4, aplicacion: "Rodillos Alimentación", 
+             rpm: 500, carga: 0.3, horas_diarias: 8, criticidad: 1, grupo: "CHUMACERAS", marca: "NSK"},
+            {id: 21, tipo: "P206", categoria: "Chumacera", cantidad: 4, aplicacion: "Rodillos Cinta Transportadora", 
+             rpm: 800, carga: 0.4, horas_diarias: 8, criticidad: 2, grupo: "CHUMACERAS", marca: "NSK"},
+             
+            // CORREAS
+            {id: 22, tipo: "B 1350 Li", categoria: "Correa", cantidad: 2, aplicacion: "Disco Agitado Carro", 
+             rpm: 0, carga: 0.6, horas_diarias: 6, criticidad: 2, grupo: "CORREAS", marca: "NSK"},
+            {id: 23, tipo: "B2100 Li", categoria: "Correa", cantidad: 4, aplicacion: "Sistema de Vibración", 
+             rpm: 0, carga: 0.7, horas_diarias: 4, criticidad: 2, grupo: "CORREAS", marca: "NSK"},
+            {id: 24, tipo: "B116 (295Li)", categoria: "Correa", cantidad: 2, aplicacion: "Transmisión Cinta Transportadora", 
+             rpm: 0, carga: 0.5, horas_diarias: 8, criticidad: 2, grupo: "CORREAS", marca: "NSK"},
+            {id: 25, tipo: "B2000 Li", categoria: "Correa", cantidad: 2, aplicacion: "Transmisión Cinta Transportadora", 
+             rpm: 0, carga: 0.5, horas_diarias: 8, criticidad: 2, grupo: "CORREAS", marca: "NSK"},
+            {id: 26, tipo: "B 1650 Li", categoria: "Correa", cantidad: 3, aplicacion: "Mixer de Material", 
+             rpm: 0, carga: 0.8, horas_diarias: 6, criticidad: 3, grupo: "CORREAS", marca: "NSK"}
+        ];
+
+        // Resto de datos (precios, cargas, capacidades) - mantener del código original
+        const preciosFabricantes = {
+            "SKF": {
+                "6203": 85, "6204": 110, "6205": 135, "6206": 185, "6207": 260, "6304": 165,
+                "P205": 320, "P206": 390, "P207": 460, "UCFL 205": 350, "UCFL 206": 420, "F206": 340, "207 306": 490,
+                "B 1350": 180, "B2100": 220, "B116": 150, "B2000": 210, "B 1650": 195
+            },
+            "FAG": {
+                "6203": 90, "6204": 115, "6205": 140, "6206": 195, "6207": 275, "6304": 175,
+                "P205": 335, "P206": 410, "P207": 485, "UCFL 205": 365, "UCFL 206": 440, "F206": 355, "207 306": 510,
+                "B 1350": 185, "B2100": 225, "B116": 155, "B2000": 215, "B 1650": 200
+            },
+            "NSK": {
+                "6203": 80, "6204": 105, "6205": 130, "6206": 175, "6207": 245, "6304": 155,
+                "P205": 305, "P206": 370, "P207": 435, "UCFL 205": 330, "UCFL 206": 400, "F206": 320, "207 306": 465,
+                "B 1350": 170, "B2100": 210, "B116": 140, "B2000": 200, "B 1650": 185
+            },
+            "NTN": {
+                "6203": 78, "6204": 102, "6205": 125, "6206": 170, "6207": 240, "6304": 150,
+                "P205": 295, "P206": 360, "P207": 425, "UCFL 205": 320, "UCFL 206": 390, "F206": 310, "207 306": 450,
+                "B 1350": 165, "B2100": 205, "B116": 135, "B2000": 195, "B 1650": 180
+            },
+            "TIMKEN": {
+                "6203": 95, "6204": 125, "6205": 155, "6206": 210, "6207": 295, "6304": 190,
+                "P205": 365, "P206": 445, "P207": 525, "UCFL 205": 395, "UCFL 206": 475, "F206": 385, "207 306": 550,
+                "B 1350": 195, "B2100": 240, "B116": 165, "B2000": 230, "B 1650": 210
+            },
+            "KOYO": {
+                "6203": 75, "6204": 98, "6205": 120, "6206": 165, "6207": 230, "6304": 145,
+                "P205": 285, "P206": 350, "P207": 415, "UCFL 205": 310, "UCFL 206": 380, "F206": 300, "207 306": 440,
+                "B 1350": 160, "B2100": 200, "B116": 130, "B2000": 190, "B 1650": 175
+            },
+            "GENERICO": {
+                "6203": 65, "6204": 85, "6205": 105, "6206": 145, "6207": 200, "6304": 125,
+                "P205": 250, "P206": 305, "P207": 360, "UCFL 205": 270, "UCFL 206": 330, "F206": 260, "207 306": 385,
+                "B 1350": 130, "B2100": 160, "B116": 110, "B2000": 150, "B 1650": 140
+            },
+            "GATES": {
+                "6203": 80, "6204": 105, "6205": 130, "6206": 175, "6207": 245, "6304": 155,
+                "P205": 305, "P206": 370, "P207": 435, "UCFL 205": 330, "UCFL 206": 400, "F206": 320, "207 306": 465,
+                "B 1350": 220, "B2100": 280, "B116": 180, "B2000": 260, "B 1650": 240
+            },
+            "OPTIBELT": {
+                "6203": 80, "6204": 105, "6205": 130, "6206": 175, "6207": 245, "6304": 155,
+                "P205": 305, "P206": 370, "P207": 435, "UCFL 205": 330, "UCFL 206": 400, "F206": 320, "207 306": 465,
+                "B 1350": 200, "B2100": 250, "B116": 160, "B2000": 230, "B 1650": 210
+            },
+            "CONTINENTAL": {
+                "6203": 80, "6204": 105, "6205": 130, "6206": 175, "6207": 245, "6304": 155,
+                "P205": 305, "P206": 370, "P207": 435, "UCFL 205": 330, "UCFL 206": 400, "F206": 320, "207 306": 465,
+                "B 1350": 210, "B2100": 265, "B116": 170, "B2000": 245, "B 1650": 225
+            }
+        };
+
+        // Cargas estimadas por fabricante y tipo de componente
+        const cargasEstimadas = {
+            "SKF": {
+                "6203": 0.8, "6204": 0.7, "6205": 0.6, "6206": 0.9, "6207": 0.8, "6304": 0.5,
+                "P205": 0.6, "P206": 0.7, "P207": 0.5, "UCFL 205": 0.5, "UCFL 206": 0.6, "F206": 0.5, "207 306": 0.6,
+                "correa": 0.6
+            },
+            "FAG": {
+                "6203": 0.7, "6204": 0.6, "6205": 0.5, "6206": 0.8, "6207": 0.7, "6304": 0.4,
+                "P205": 0.5, "P206": 0.6, "P207": 0.4, "UCFL 205": 0.4, "UCFL 206": 0.5, "F206": 0.4, "207 306": 0.5,
+                "correa": 0.5
+            },
+            "NSK": {
+                "6203": 0.6, "6204": 0.5, "6205": 0.5, "6206": 0.9, "6207": 0.8, "6304": 0.4,
+                "P205": 0.6, "P206": 0.4, "P207": 0.3, "UCFL 205": 0.5, "UCFL 206": 0.6, "F206": 0.5, "207 306": 0.6,
+                "correa": 0.6
+            },
+            "NTN": {
+                "6203": 0.6, "6204": 0.5, "6205": 0.5, "6206": 0.9, "6207": 0.8, "6304": 0.4,
+                "P205": 0.6, "P206": 0.4, "P207": 0.3, "UCFL 205": 0.5, "UCFL 206": 0.6, "F206": 0.5, "207 306": 0.6,
+                "correa": 0.6
+            },
+            "TIMKEN": {
+                "6203": 0.9, "6204": 0.8, "6205": 0.7, "6206": 1.0, "6207": 0.9, "6304": 0.6,
+                "P205": 0.7, "P206": 0.8, "P207": 0.6, "UCFL 205": 0.6, "UCFL 206": 0.7, "F206": 0.6, "207 306": 0.7,
+                "correa": 0.7
+            },
+            "KOYO": {
+                "6203": 0.5, "6204": 0.4, "6205": 0.4, "6206": 0.8, "6207": 0.7, "6304": 0.3,
+                "P205": 0.5, "P206": 0.3, "P207": 0.2, "UCFL 205": 0.4, "UCFL 206": 0.5, "F206": 0.4, "207 306": 0.5,
+                "correa": 0.5
+            },
+            "GENERICO": {
+                "6203": 0.4, "6204": 0.3, "6205": 0.3, "6206": 0.7, "6207": 0.6, "6304": 0.2,
+                "P205": 0.4, "P206": 0.2, "P207": 0.1, "UCFL 205": 0.3, "UCFL 206": 0.4, "F206": 0.3, "207 306": 0.4,
+                "correa": 0.4
+            },
+            "GATES": {
+                "6203": 0.6, "6204": 0.5, "6205": 0.5, "6206": 0.9, "6207": 0.8, "6304": 0.4,
+                "P205": 0.6, "P206": 0.4, "P207": 0.3, "UCFL 205": 0.5, "UCFL 206": 0.6, "F206": 0.5, "207 306": 0.6,
+                "correa": 0.7
+            },
+            "OPTIBELT": {
+                "6203": 0.6, "6204": 0.5, "6205": 0.5, "6206": 0.9, "6207": 0.8, "6304": 0.4,
+                "P205": 0.6, "P206": 0.4, "P207": 0.3, "UCFL 205": 0.5, "UCFL 206": 0.6, "F206": 0.5, "207 306": 0.6,
+                "correa": 0.65
+            },
+            "CONTINENTAL": {
+                "6203": 0.6, "6204": 0.5, "6205": 0.5, "6206": 0.9, "6207": 0.8, "6304": 0.4,
+                "P205": 0.6, "P206": 0.4, "P207": 0.3, "UCFL 205": 0.5, "UCFL 206": 0.6, "F206": 0.5, "207 306": 0.6,
+                "correa": 0.68
+            }
+        };
+
+        // Capacidades de carga dinámica (kN) por marca y tipo de rodamiento
+        const capacidadesCargaMarca = {
+            "SKF": {
+                "6203": 9.8, "6204": 13.2, "6205": 14.5, "6206": 20.1, "6207": 26.0, "6304": 15.8,
+                "P205": 28.5, "P206": 35.2, "P207": 42.8, "UCFL 205": 25.6, "UCFL 206": 31.4, "F206": 22.8, "207 306": 38.5
+            },
+            "FAG": {
+                "6203": 9.6, "6204": 12.9, "6205": 14.2, "6206": 19.8, "6207": 25.7, "6304": 15.5,
+                "P205": 28.0, "P206": 34.8, "P207": 42.2, "UCFL 205": 25.2, "UCFL 206": 31.0, "F206": 22.5, "207 306": 38.0
+            },
+            "NSK": {
+                "6203": 9.5, "6204": 12.7, "6205": 14.0, "6206": 19.5, "6207": 25.5, "6304": 15.3,
+                "P205": 27.8, "P206": 34.5, "P207": 41.8, "UCFL 205": 25.0, "UCFL 206": 30.8, "F206": 22.2, "207 306": 37.5
+            },
+            "NTN": {
+                "6203": 9.4, "6204": 12.6, "6205": 13.9, "6206": 19.3, "6207": 25.2, "6304": 15.1,
+                "P205": 27.5, "P206": 34.2, "P207": 41.5, "UCFL 205": 24.8, "UCFL 206": 30.5, "F206": 22.0, "207 306": 37.2
+            },
+            "TIMKEN": {
+                "6203": 10.2, "6204": 13.8, "6205": 15.0, "6206": 20.8, "6207": 27.2, "6304": 16.5,
+                "P205": 29.5, "P206": 36.8, "P207": 44.5, "UCFL 205": 26.8, "UCFL 206": 32.5, "F206": 24.2, "207 306": 40.2
+            },
+            "KOYO": {
+                "6203": 9.2, "6204": 12.3, "6205": 13.6, "6206": 18.8, "6207": 24.5, "6304": 14.8,
+                "P205": 26.8, "P206": 33.2, "P207": 40.2, "UCFL 205": 24.2, "UCFL 206": 29.8, "F206": 21.5, "207 306": 36.2
+            },
+            "GENERICO": {
+                "6203": 8.8, "6204": 11.8, "6205": 12.9, "6206": 17.8, "6207": 23.2, "6304": 14.2,
+                "P205": 25.5, "P206": 31.8, "P207": 38.5, "UCFL 205": 23.2, "UCFL 206": 28.5, "F206": 20.8, "207 306": 34.8
+            },
+            "GATES": {
+                "6203": 9.5, "6204": 12.7, "6205": 14.0, "6206": 19.5, "6207": 25.5, "6304": 15.3,
+                "P205": 27.8, "P206": 34.5, "P207": 41.8, "UCFL 205": 25.0, "UCFL 206": 30.8, "F206": 22.2, "207 306": 37.5
+            },
+            "OPTIBELT": {
+                "6203": 9.5, "6204": 12.7, "6205": 14.0, "6206": 19.5, "6207": 25.5, "6304": 15.3,
+                "P205": 27.8, "P206": 34.5, "P207": 41.8, "UCFL 205": 25.0, "UCFL 206": 30.8, "F206": 22.2, "207 306": 37.5
+            },
+            "CONTINENTAL": {
+                "6203": 9.5, "6204": 12.7, "6205": 14.0, "6206": 19.5, "6207": 25.5, "6304": 15.3,
+                "P205": 27.8, "P206": 34.5, "P207": 41.8, "UCFL 205": 25.0, "UCFL 206": 30.8, "F206": 22.2, "207 306": 37.5
+            }
+        };
+
+        // ====================================================================
+        // VARIABLES GLOBALES PARA CONTROL DEL SISTEMA
+        // ====================================================================
+        let fabricanteGlobal = "NSK";
+        let componentesDataOriginal = JSON.parse(JSON.stringify(componentesData));
+        let configuracionGuardada = null;
+        let autoGuardado = true;
+        
+        // Control de instancias de gráficas para evitar loops infinitos
+        let chartInstances = {
+            criticidad: null,
+            costos: null,
+            tiempo: null,
+            categoria: null
+        };
+        let graficasGeneradas = false;
+
+        // Variable global para el calendario
+        let calendario = null;
+        let eventosCalendario = [];
+
+        // Capacidades de carga dinámica (kN) según ISO 281
+        const capacidadesCarga = {
+            "6203": 9.5, "6204": 12.7, "6205": 14.0, 
+            "6206": 19.5, "6207": 25.5, "6304": 15.3
+        };
+
+        // Variables de estado del sistema
+        let sistemaInicializado = false;
+        let diagnosticoEnProgreso = false;
+
+        // ====================================================================
+        // FUNCIONES DE INICIALIZACIÓN Y DIAGNÓSTICO MEJORADAS
+        // ====================================================================
+
+        /**
+         * NUEVA: Inicialización inteligente del sistema
+         */
+        async function inicializarSistema() {
+            try {
+                mostrarLoading(true, "Inicializando sistema...");
+                
+                // Paso 1: Verificar dependencias críticas
+                mostrarLoading(true, "Verificando dependencias...");
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const dependenciasOK = verificarDependencias();
+                actualizarEstadoSistema('dependencias', dependenciasOK);
+                
+                // Paso 2: Verificar PDF Generator
+                mostrarLoading(true, "Verificando PDF Generator...");
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const pdfOK = typeof window.PDFGenerator !== 'undefined';
+                actualizarEstadoSistema('pdf', pdfOK);
+                
+                // Paso 3: Verificar datos
+                mostrarLoading(true, "Verificando datos...");
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                const datosOK = verificarDatos();
+                actualizarEstadoSistema('datos', datosOK);
+                
+                // Paso 4: Verificar compatibilidad del navegador
+                mostrarLoading(true, "Verificando compatibilidad...");
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                const navegadorOK = verificarCompatibilidadNavegador();
+                actualizarEstadoSistema('compatibilidad', navegadorOK);
+                
+                // Paso 5: Cargar configuración si existe
+                mostrarLoading(true, "Cargando configuración...");
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                if (localStorageDisponible()) {
+                    const configGuardada = localStorage.getItem('rodamientos_config');
+                    if (configGuardada) {
+                        try {
+                            const config = JSON.parse(configGuardada);
+                            aplicarConfiguracionCargada(config);
+                            mostrarNotificacion('🔄 Configuración anterior cargada automáticamente', 'success');
+                        } catch(e) {
+                            console.warn('Error cargando configuración:', e);
+                        }
+                    }
+                }
+                
+                // Paso 6: Inicializar interfaces
+                mostrarLoading(true, "Inicializando interfaces...");
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                llenarTablaConfiguracion();
+                
+                // Paso 7: Configurar referencias globales para PDF Generator
+                window.componentesData = componentesData;
+                window.obtenerPrecio = obtenerPrecio;
+                window.mostrarMensaje = mostrarNotificacion;
+                
+                // Mostrar estado final del sistema
+                const estadoGeneral = dependenciasOK && pdfOK && datosOK && navegadorOK;
+                document.getElementById('sistemaEstado').style.display = 'block';
+                
+                if (estadoGeneral) {
+                    document.getElementById('sistemaEstado').className = 'sistema-estado';
+                    document.getElementById('estadoMensaje').textContent = '✅ Sistema listo para uso';
+                    mostrarNotificacion('🎉 Sistema inicializado correctamente', 'success');
+                } else {
+                    document.getElementById('sistemaEstado').className = 'sistema-estado warning';
+                    document.getElementById('estadoMensaje').textContent = '⚠️ Sistema con advertencias - Ver diagnóstico';
+                    mostrarNotificacion('⚠️ Sistema inicializado con advertencias', 'warning');
+                }
+                
+                sistemaInicializado = true;
+                
+            } catch (error) {
+                console.error('Error inicializando sistema:', error);
+                document.getElementById('sistemaEstado').className = 'sistema-estado error';
+                document.getElementById('estadoMensaje').textContent = '❌ Error en inicialización';
+                mostrarNotificacion('❌ Error inicializando sistema', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+
+        /**
+         * NUEVA: Función de diagnóstico completo mejorada
+         */
+        async function ejecutarDiagnosticoCompleto() {
+            if (diagnosticoEnProgreso) {
+                mostrarNotificacion('⏳ Diagnóstico ya en progreso...', 'warning');
+                return;
+            }
+            
+            diagnosticoEnProgreso = true;
+            
+            try {
+                mostrarLoading(true, "Ejecutando diagnóstico completo...");
+                
+                // Verificar que el tester esté disponible
+                if (typeof window.pdfTester === 'undefined') {
+                    mostrarNotificacion('⚠️ Testing suite no disponible', 'warning');
+                    return;
+                }
+                
+                mostrarLoading(true, "Ejecutando tests del PDF Generator...");
+                const resultado = await window.pdfTester.ejecutarSuiteCompleta();
+                
+                // Mostrar resultados en la pestaña de diagnósticos
+                mostrarResultadosDiagnostico(resultado);
+                
+                // Cambiar a la pestaña de diagnósticos
+                mostrarTab('diagnosticos');
+                
+                mostrarNotificacion(`✅ Diagnóstico completado: ${resultado.resumen.exitos}/${resultado.resumen.totalTests} tests exitosos`, 'success');
+                
+            } catch (error) {
+                console.error('Error en diagnóstico:', error);
+                mostrarNotificacion('❌ Error ejecutando diagnóstico', 'error');
+            } finally {
+                diagnosticoEnProgreso = false;
+                mostrarLoading(false);
+            }
+        }
+
+        /**
+         * NUEVA: Reparación automática del sistema
+         */
+        async function repararAutomaticamente() {
+            try {
+                mostrarLoading(true, "Ejecutando reparación automática...");
+                
+                // 1. Verificar y aplicar soluciones automáticas
+                if (typeof window.aplicarSolucionAutomatica === 'function') {
+                    mostrarLoading(true, "Aplicando soluciones automáticas...");
+                    window.aplicarSolucionAutomatica();
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // 2. Reinicializar referencias globales
+                mostrarLoading(true, "Reparando referencias globales...");
+                window.componentesData = componentesData;
+                window.obtenerPrecio = obtenerPrecio;
+                window.mostrarMensaje = mostrarNotificacion;
+                
+                // 3. Recalcular datos
+                mostrarLoading(true, "Recalculando datos...");
+                if (sistemaInicializado) {
+                    calcularTodo();
+                }
+                
+                // 4. Verificar estado final
+                mostrarLoading(true, "Verificando reparaciones...");
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                mostrarNotificacion('🔧 Reparación automática completada', 'success');
+                
+            } catch (error) {
+                console.error('Error en reparación:', error);
+                mostrarNotificacion('❌ Error en reparación automática', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+
+        /**
+         * NUEVA: Test PDF rápido
+         */
+        async function testPDFRapido() {
+            try {
+                if (typeof window.pdfTester === 'undefined') {
+                    mostrarNotificacion('⚠️ Testing suite no disponible', 'warning');
+                    return;
+                }
+                
+                mostrarLoading(true, "Ejecutando test rápido...");
+                const resultado = await window.pdfTester.testRapido();
+                
+                if (resultado) {
+                    mostrarNotificacion('✅ Test PDF rápido exitoso', 'success');
+                } else {
+                    mostrarNotificacion('⚠️ Test PDF falló - ejecutar diagnóstico completo', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error en test rápido:', error);
+                mostrarNotificacion('❌ Error en test PDF', 'error');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+
+        /**
+         * NUEVA: Función mejorada para generar PDF usando el nuevo sistema
+         */
+        async function generarReportePDFMejorado() {
+            const btnPDF = document.getElementById('btnGenerarPDF');
+            
+            try {
+                // Verificar que hay datos calculados
+                const elementoCriticos = document.getElementById('componentesCriticos');
+                if (!elementoCriticos || !elementoCriticos.textContent || elementoCriticos.textContent === '-') {
+                    mostrarNotificacion('❌ No hay datos calculados. Presiona "Calcular" primero', 'warning');
+                    return;
+                }
+                
+                // Verificar que PDFGenerator esté disponible
+                if (typeof window.PDFGenerator === 'undefined') {
+                    mostrarNotificacion('❌ PDF Generator no disponible. Ejecutar diagnóstico.', 'error');
+                    return;
+                }
+                
+                // Deshabilitar botón y mostrar estado de generación
+                btnPDF.disabled = true;
+                btnPDF.classList.add('generating');
+                btnPDF.textContent = '📄 Generando PDF...';
+                
+                mostrarNotificacion('📄 Iniciando generación de PDF...', 'info');
+                
+                // Usar el nuevo generador de PDF
+                await window.PDFGenerator.generarReporte();
+                
+                mostrarNotificacion('✅ PDF generado exitosamente', 'success');
+                
+            } catch (error) {
+                console.error('Error generando PDF:', error);
+                mostrarNotificacion('❌ Error al generar PDF. Ver consola para detalles.', 'error');
+            } finally {
+                // Restaurar botón
+                btnPDF.disabled = false;
+                btnPDF.classList.remove('generating');
+                btnPDF.textContent = '📄 Generar Reporte PDF';
+            }
+        }
+
+        // ====================================================================
+        // FUNCIONES DE INTERFAZ DE USUARIO MEJORADAS
+        // ====================================================================
+
+        /**
+         * NUEVA: Sistema de notificaciones mejorado
+         */
+        function mostrarNotificacion(texto, tipo = 'info', duracion = 4000) {
+            // Remover notificación existente si la hay
+            const existente = document.querySelector('.notification');
+            if (existente) {
+                existente.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${tipo}`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>${texto}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 18px; cursor: pointer; opacity: 0.7;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Mostrar con animación
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Auto-remover después del tiempo especificado
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, duracion);
+        }
+
+        /**
+         * NUEVA: Loading overlay mejorado
+         */
+        function mostrarLoading(mostrar, texto = 'Procesando...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (mostrar) {
+                loadingText.textContent = texto;
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
+        }
+
+        /**
+         * NUEVA: Actualizar estado visual del sistema
+         */
+        function actualizarEstadoSistema(componente, estado) {
+            const elemento = document.getElementById(`estado${componente.charAt(0).toUpperCase() + componente.slice(1)}`);
+            if (elemento) {
+                elemento.textContent = estado ? '✅' : '❌';
+            }
+        }
+
+        /**
+         * NUEVA: Verificar dependencias críticas
+         */
+        function verificarDependencias() {
+            const dependencias = [
+                { nombre: 'jsPDF', objeto: window.jsPDF },
+                { nombre: 'html2canvas', objeto: window.html2canvas },
+                { nombre: 'Chart', objeto: window.Chart },
+                { nombre: 'FullCalendar', objeto: window.FullCalendar }
+            ];
+            
+            return dependencias.every(dep => dep.objeto !== undefined);
+        }
+
+        /**
+         * NUEVA: Verificar datos del sistema
+         */
+        function verificarDatos() {
+            return componentesData && 
+                   componentesData.length > 0 && 
+                   typeof preciosFabricantes === 'object' &&
+                   typeof cargasEstimadas === 'object';
+        }
+
+        /**
+         * NUEVA: Verificar compatibilidad del navegador
+         */
+        function verificarCompatibilidadNavegador() {
+            try {
+                // Test Canvas support
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+                
+                // Test localStorage
+                const test = '__test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        /**
+         * NUEVA: Mostrar resultados de diagnóstico
+         */
+        function mostrarResultadosDiagnostico(resultado) {
+            const container = document.getElementById('resultadosTesteo');
+            
+            const html = `
+                <div class="card">
+                    <h4>📊 Resultados del Diagnóstico</h4>
+                    <div class="summary-grid">
+                        <div class="summary-card ${resultado.resumen.porcentajeExito > 80 ? '' : 'warning'}">
+                            <h4>TESTS EXITOSOS</h4>
+                            <div class="value">${resultado.resumen.exitos}</div>
+                            <div class="unit">de ${resultado.resumen.totalTests}</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>PORCENTAJE ÉXITO</h4>
+                            <div class="value">${resultado.resumen.porcentajeExito}%</div>
+                            <div class="unit">overall</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>TIEMPO TOTAL</h4>
+                            <div class="value">${resultado.resumen.tiempoTotal}</div>
+                            <div class="unit">segundos</div>
+                        </div>
+                    </div>
+                    
+                    ${resultado.resumen.fallos > 0 ? `
+                        <div class="warning">
+                            <h4>⚠️ Tests Fallidos (${resultado.resumen.fallos})</h4>
+                            <ul>
+                                ${resultado.detalles.filter(t => !t.exito).map(test => 
+                                    `<li><strong>${test.nombre}:</strong> ${test.detalle}</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    ` : `
+                        <div class="success">
+                            <h4>✅ Todos los tests pasaron correctamente</h4>
+                            <p>El sistema está funcionando óptimamente.</p>
+                        </div>
+                    `}
+                    
+                    <details style="margin-top: 20px;">
+                        <summary style="cursor: pointer; font-weight: bold;">🔍 Ver detalles completos</summary>
+                        <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; font-size: 12px; overflow-x: auto;">${resultado.reporte}</pre>
+                    </details>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        /**
+         * NUEVA: Funciones de testing adicionales
+         */
+        async function ejecutarTestCompleto() {
+            if (typeof window.testPDFCompleto === 'function') {
+                mostrarLoading(true, "Ejecutando test completo...");
+                try {
+                    await window.testPDFCompleto();
+                    mostrarNotificacion('✅ Test completo finalizado', 'success');
+                } catch (error) {
+                    mostrarNotificacion('❌ Error en test completo', 'error');
+                } finally {
+                    mostrarLoading(false);
+                }
+            } else {
+                mostrarNotificacion('⚠️ Testing suite no disponible', 'warning');
+            }
+        }
+
+        async function ejecutarTestRapido() {
+            if (typeof window.testPDFRapido === 'function') {
+                const resultado = await window.testPDFRapido();
+                mostrarNotificacion(resultado ? '✅ Test rápido exitoso' : '⚠️ Test rápido falló', resultado ? 'success' : 'warning');
+            } else {
+                mostrarNotificacion('⚠️ Testing suite no disponible', 'warning');
+            }
+        }
+
+        async function ejecutarBenchmark() {
+            if (typeof window.benchmarkPDF === 'function') {
+                mostrarLoading(true, "Ejecutando benchmark...");
+                try {
+                    const resultado = await window.benchmarkPDF();
+                    mostrarNotificacion(`📊 Benchmark: ${resultado.promedio.toFixed(2)}ms
